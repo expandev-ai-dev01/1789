@@ -17,10 +17,6 @@ export enum ExpectedReturn {
   Multi = 'Multi',
 }
 
-export interface IRecordSet<T = any> {
-  recordset: T[];
-}
-
 export const getPool = async (): Promise<sql.ConnectionPool> => {
   if (!pool) {
     pool = await sql.connect(config.database);
@@ -59,12 +55,25 @@ export const dbRequest = async (
     case ExpectedReturn.Multi:
       if (resultSetNames && resultSetNames.length > 0) {
         const namedResults: { [key: string]: any[] } = {};
-        resultSetNames.forEach((name, index) => {
-          namedResults[name] = result.recordsets[index] || [];
-        });
+        if (Array.isArray(result.recordsets)) {
+          const recordsets = result.recordsets;
+          resultSetNames.forEach((name, index) => {
+            const recordset = recordsets[index];
+            namedResults[name] = recordset || [];
+          });
+        } else if (result.recordsets) {
+          const recordsetsObject = result.recordsets as { [key: string]: sql.IRecordSet<any> };
+          resultSetNames.forEach((name) => {
+            namedResults[name] = recordsetsObject[name] || [];
+          });
+        }
         return namedResults;
       }
-      return result.recordsets;
+      // When not using named result sets, return the first recordset's data array.
+      if (Array.isArray(result.recordsets)) {
+        return result.recordsets[0] ?? [];
+      }
+      return [];
     default:
       return result.recordset;
   }

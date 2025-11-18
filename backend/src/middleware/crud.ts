@@ -132,3 +132,16 @@ export const errorResponse = (message: string, code?: string, details?: any) => 
   },
   timestamp: new Date().toISOString(),
 });
+
+export interface ApiError extends Error {
+  statusCode?: number;
+  code?: string;
+  details?: any;
+}
+
+export const StatusGeneralError: ApiError = {
+  name: 'GeneralError',
+  message: 'An unexpected error occurred',
+  statusCode: 500,
+  code: 'GENERAL_ERROR',
+};
